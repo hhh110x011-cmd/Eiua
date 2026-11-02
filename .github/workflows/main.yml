@@ -1,0 +1,32 @@
+name: Windows-Cloud-PC-RDP
+
+on: 
+  workflow_dispatch: # Cho phép bấm nút chạy thủ công bất cứ lúc nào
+
+jobs:
+  build:
+    runs-on: windows-latest # Yêu cầu GitHub cấp máy chủ chạy hệ điều hành Windows Server thật 100%
+    timeout-minutes: 360 # Giữ máy chạy liên tục tối đa 6 tiếng mỗi lần bấm
+
+    steps:
+    - name: 1. Tải và cài đặt dịch vụ kết nối mạng Tailscale vào máy chủ
+      run: |
+        Invoke-WebRequest -Uri "https://tailscale.com" -OutFile "tailscale-setup.exe"
+        Start-Process -FilePath .\tailscale-setup.exe -ArgumentList '/qn /norestart' -Wait
+
+    - name: 2. Đăng nhập và kích hoạt đồng bộ hóa mạng Tailscale với khóa của bạn
+      run: |
+        & "C:\Program Files\Tailscale\tailscale.exe" up --auth-key=tskey-auth-kMD2HCUxq311CNTRL-U66y9m6j6yFqsUVvBr2qxFJhE6oL5EAR
+
+    - name: 3. Đổi mật khẩu cho tài khoản máy ảo để lát nữa đăng nhập RDP
+      run: |
+        $Password = ConvertTo-SecureString "CloudPC999@" -AsPlainText -Force
+        Set-LocalUser -Name "runneradmin" -Password $Password
+
+    - name: 4. Treo giữ máy chủ chạy liên tục chống ngủ quên
+      run: |
+        $seconds = 21600
+        while ($seconds -gt 0) {
+            Start-Sleep -Seconds 60
+            $seconds -= 60
+        }
